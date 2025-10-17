@@ -5,58 +5,59 @@ import com.nowheberg.bottrainer.arena.Arena;
 import com.nowheberg.bottrainer.bot.BotMode;
 import com.nowheberg.bottrainer.bot.Difficulty;
 import com.nowheberg.bottrainer.bot.impl.SimpleBot;
+import com.nowheberg.bottrainer.integration.StrikePracticeBypassListener;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.Damageable;
 import org.bukkit.inventory.meta.FireworkMeta;
-import org.bukkit.inventory.meta.ItemMeta;
 
-import java.util.*;
+import java.util.Map;
+import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class SessionManager implements Listener {
+
     public static class Session {
-        public final java.util.UUID playerId; public final PlayerSnapshot snapshot; public final long endTick;
-        public final BotMode mode; public final Difficulty diff; public final long startedTick;
+        public final UUID playerId;
+        public final PlayerSnapshot snapshot;
+        public final long endTick;
+        public final BotMode mode;
+        public final Difficulty diff;
         public final SimpleBot bot;
-        public Session(java.util.UUID playerId, PlayerSnapshot snapshot, long endTick, BotMode mode, Difficulty diff, SimpleBot bot) {
-            this.playerId = playerId; this.snapshot = snapshot; this.endTick = endTick; this.mode = mode; this.diff = diff; this.bot = bot; this.startedTick = Bukkit.getCurrentTick();
+        public final Arena arena;
+        public final long startedTick;
+        public Session(UUID playerId, PlayerSnapshot snapshot, long endTick, BotMode mode, Difficulty diff, SimpleBot bot, Arena arena) {
+            this.playerId = playerId; this.snapshot = snapshot; this.endTick = endTick; this.mode = mode; this.diff = diff; this.bot = bot; this.arena = arena; this.startedTick = Bukkit.getCurrentTick();
         }
     }
 
-    private final java.util.Map<java.util.UUID, Session> sessions = new ConcurrentHashMap<>();
-    private final BotTrainerPlugin plugin; private final com.nowheberg.bottrainer.arena.ArenaManager arenas;
+    private final Map<UUID, Session> sessions = new ConcurrentHashMap<>();
+    private final BotTrainerPlugin plugin;
+    private final com.nowheberg.bottrainer.arena.ArenaManager arenas;
 
     public SessionManager(BotTrainerPlugin plugin, com.nowheberg.bottrainer.arena.ArenaManager arenas) { this.plugin = plugin; this.arenas = arenas; }
 
     public void startFixedSession(Player p, Arena arena, Difficulty diff, BotMode mode, long durationTicks) {
-        // Si une session existe, on la stoppe proprement (évite les doublons)
         if (sessions.containsKey(p.getUniqueId())) stopSession(p.getUniqueId(), true);
-
-        // Nettoyage d'anciens bots taggés pour ce joueur
         cleanupPlayerBots(p.getUniqueId(), arena);
 
         Location spawn = arena.spawn();
         if (spawn.getWorld()==null) { p.sendMessage("§cArène non configurée (monde invalide)."); return; }
         var snap = PlayerSnapshot.of(p);
 
-        // Donner le kit fixe
         giveFixedKit(p);
         p.setHealth(p.getMaxHealth()); p.setFoodLevel(20);
         p.teleport(spawn);
 
-        // Créer le bot
+        p.setMetadata(StrikePracticeBypassListener.META_KEY, new org.bukkit.metadata.FixedMetadataValue(plugin, true));
+
         double baseRange = plugin.getConfig().getDouble("settings.bot.hitRange", 2.8);
         int baseCd = plugin.getConfig().getInt("settings.bot.attackCooldownTicks", 12);
         var diffSec = plugin.getConfig().getConfigurationSection("settings.difficulty."+diff.name());
@@ -64,17 +65,13 @@ public class SessionManager implements Listener {
         double strafe = diffSec.getDouble("strafe", 1.0);
         var bot = new SimpleBot(p, spawn, mode, diff, baseRange, baseCd, speed, strafe);
         bot.start();
-        // Tag pour pouvoir le supprimer de manière fiable
-        if (bot.entity()!=null) {
-            bot.entity().addScoreboardTag("bottrainer:" + p.getUniqueId());
-        }
+        if (bot.entity()!=null) bot.entity().addScoreboardTag("bottrainer:" + p.getUniqueId());
 
         long endTick = Bukkit.getCurrentTick() + durationTicks;
-        var session = new Session(p.getUniqueId(), snap, endTick, mode, diff, bot);
+        var session = new Session(p.getUniqueId(), snap, endTick, mode, diff, bot, arena);
         sessions.put(p.getUniqueId(), session);
         p.sendMessage("§aEntraînement démarré: §e"+mode+" §7| §b"+diff+" §7| §f"+(durationTicks/20)+"s");
 
-        // Tâche de fin de session
         Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             Session s = sessions.get(p.getUniqueId());
             if (s == null) return;
@@ -83,13 +80,12 @@ public class SessionManager implements Listener {
         }, 20L, 20L);
     }
 
-    public void stopSession(java.util.UUID playerId, boolean restore) {
+    public void stopSession(UUID playerId, boolean restore) {
         Session s = sessions.remove(playerId);
         if (s != null && s.bot != null) s.bot.stop();
-        // Supprime tous les bots taggés de ce joueur (sécurité anti-doublon)
-        cleanupPlayerBots(playerId, null);
-
+        cleanupPlayerBots(playerId, s != null ? s.arena : null);
         var p = Bukkit.getPlayer(playerId);
+        if (p != null) { p.removeMetadata(StrikePracticeBypassListener.META_KEY, plugin); }
         if (p != null && restore && s != null) {
             p.getInventory().clear(); p.getInventory().setArmorContents(null);
             s.snapshot.restore(p);
@@ -97,13 +93,12 @@ public class SessionManager implements Listener {
         }
     }
 
-    private void cleanupPlayerBots(java.util.UUID playerId, Arena arena) {
+    private void cleanupPlayerBots(UUID playerId, Arena arena) {
         if (arena != null && arena.world() != null) {
             for (var e : arena.world().getEntities()) {
                 if (e.getScoreboardTags().contains("bottrainer:" + playerId)) e.remove();
             }
         } else {
-            // Parcourt tous les mondes (fallback)
             Bukkit.getWorlds().forEach(w -> {
                 for (var e : w.getEntities()) {
                     if (e.getScoreboardTags().contains("bottrainer:" + playerId)) e.remove();
@@ -112,14 +107,12 @@ public class SessionManager implements Listener {
         }
     }
 
-    public void shutdown() {
-        for (var id : new java.util.ArrayList<>(sessions.keySet())) stopSession(id, true);
-    }
+    public void shutdown() { for (var id : new java.util.ArrayList<>(sessions.keySet())) stopSession(id, true); }
 
-    @EventHandler public void onQuit(PlayerQuitEvent e) { stopSession(e.getPlayer().getUniqueId(), true); }
+    @EventHandler public void onQuit(org.bukkit.event.player.PlayerQuitEvent e) { stopSession(e.getPlayer().getUniqueId(), true); }
 
     @EventHandler public void onDeath(PlayerDeathEvent e) {
-        java.util.UUID id = e.getEntity().getUniqueId();
+        UUID id = e.getEntity().getUniqueId();
         if (!sessions.containsKey(id)) return;
         e.setKeepInventory(true); e.setKeepLevel(true); e.getDrops().clear();
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
@@ -128,7 +121,6 @@ public class SessionManager implements Listener {
         }, 1L);
     }
 
-    // Dégâts sur le bot -> totem infini simulé
     @org.bukkit.event.EventHandler public void onBotDamage(org.bukkit.event.entity.EntityDamageEvent e) {
         if (!(e.getEntity() instanceof org.bukkit.entity.LivingEntity le)) return;
         if (!le.getScoreboardTags().stream().anyMatch(t -> t.startsWith("bottrainer:"))) return;
@@ -144,10 +136,9 @@ public class SessionManager implements Listener {
         }
     }
 
-    // Réduction dégâts chute/explosions dans l'arène (si activé)
     @org.bukkit.event.EventHandler public void onPlayerDamage(org.bukkit.event.entity.EntityDamageEvent e) {
         if (!(e.getEntity() instanceof Player p)) return;
-        java.util.UUID id = p.getUniqueId();
+        UUID id = p.getUniqueId();
         Session s = sessions.get(id); if (s == null) return;
         switch (e.getCause()) {
             case FALL -> e.setCancelled(true);
@@ -159,62 +150,28 @@ public class SessionManager implements Listener {
         }
     }
 
-    // ===== FIXED KIT =====
     private void giveFixedKit(Player p) {
         p.getInventory().clear(); p.getInventory().setArmorContents(null);
+        p.getInventory().setHelmet(new ItemStack(Material.NETHERITE_HELMET));
+        p.getInventory().setChestplate(new ItemStack(Material.NETHERITE_CHESTPLATE));
+        p.getInventory().setLeggings(new ItemStack(Material.NETHERITE_LEGGINGS));
+        p.getInventory().setBoots(new ItemStack(Material.NETHERITE_BOOTS));
 
-        // Armor netherite
-        ItemStack helm = new ItemStack(Material.NETHERITE_HELMET);
-        ItemStack chest = new ItemStack(Material.NETHERITE_CHESTPLATE);
-        ItemStack legs = new ItemStack(Material.NETHERITE_LEGGINGS);
-        ItemStack boots = new ItemStack(Material.NETHERITE_BOOTS);
-        p.getInventory().setHelmet(helm);
-        p.getInventory().setChestplate(chest);
-        p.getInventory().setLeggings(legs);
-        p.getInventory().setBoots(boots);
-
-        // Sword netherite Unbreaking 5
-        ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
-        sword.addUnsafeEnchantment(Enchantment.UNBREAKING, 5);
-
-        // Mace 1: Wind Burst 2 + Density 5
-        ItemStack maceWB = new ItemStack(Material.MACE);
-        maceWB.addUnsafeEnchantment(Enchantment.WIND_BURST, 2);
-        maceWB.addUnsafeEnchantment(Enchantment.DENSITY, 5);
-
-        // Mace 2: Breach 4
-        ItemStack maceBR = new ItemStack(Material.MACE);
-        maceBR.addUnsafeEnchantment(Enchantment.BREACH, 4);
-
-        // Elytra Unbreaking 10 (dans l'inventaire, pas équipée)
-        ItemStack elytra = new ItemStack(Material.ELYTRA);
-        elytra.addUnsafeEnchantment(Enchantment.UNBREAKING, 10);
-
-        // Steaks x64
+        ItemStack sword = new ItemStack(Material.NETHERITE_SWORD); sword.addUnsafeEnchantment(Enchantment.UNBREAKING, 5);
+        ItemStack maceWB = new ItemStack(Material.MACE); maceWB.addUnsafeEnchantment(Enchantment.WIND_BURST, 2); maceWB.addUnsafeEnchantment(Enchantment.DENSITY, 5);
+        ItemStack maceBR = new ItemStack(Material.MACE); maceBR.addUnsafeEnchantment(Enchantment.BREACH, 4);
+        ItemStack elytra = new ItemStack(Material.ELYTRA); elytra.addUnsafeEnchantment(Enchantment.UNBREAKING, 10);
         ItemStack steaks = new ItemStack(Material.COOKED_BEEF, 64);
 
-        // Fireworks Force 1/2/3 (power=1,2,3) — 2 stacks chacun
-        ItemStack fw1 = fireworkStack(1, 64);
-        ItemStack fw1b = fireworkStack(1, 64);
-        ItemStack fw2 = fireworkStack(2, 64);
-        ItemStack fw2b = fireworkStack(2, 64);
-        ItemStack fw3 = fireworkStack(3, 64);
-        ItemStack fw3b = fireworkStack(3, 64);
+        ItemStack fw1 = firework(1, 64), fw1b = firework(1, 64);
+        ItemStack fw2 = firework(2, 64), fw2b = firework(2, 64);
+        ItemStack fw3 = firework(3, 64), fw3b = firework(3, 64);
 
-        // Wind Charges x6 stacks (64)
         ItemStack wind = new ItemStack(Material.WIND_CHARGE, 64);
-        ItemStack wind2 = wind.clone();
-        ItemStack wind3 = wind.clone();
-        ItemStack wind4 = wind.clone();
-        ItemStack wind5 = wind.clone();
-        ItemStack wind6 = wind.clone();
-
-        // Ender pearls x3 stacks (16)
+        ItemStack wind2 = wind.clone(), wind3 = wind.clone(), wind4 = wind.clone(), wind5 = wind.clone(), wind6 = wind.clone();
         ItemStack pearls = new ItemStack(Material.ENDER_PEARL, 16);
-        ItemStack pearls2 = pearls.clone();
-        ItemStack pearls3 = pearls.clone();
+        ItemStack pearls2 = pearls.clone(), pearls3 = pearls.clone();
 
-        // Placement dans l'inventaire (hotbar + reste)
         var inv = p.getInventory();
         inv.setItem(0, sword);
         inv.setItem(1, maceWB);
@@ -229,13 +186,18 @@ public class SessionManager implements Listener {
         inv.addItem(fw1b, fw2b, fw3b, wind, wind2, wind3, wind4, wind5, wind6, pearls2, pearls3);
     }
 
-    private ItemStack fireworkStack(int power, int amount) {
+    private ItemStack firework(int power, int amount) {
         ItemStack it = new ItemStack(Material.FIREWORK_ROCKET, amount);
-        ItemMeta meta = it.getItemMeta();
+        var meta = it.getItemMeta();
         if (meta instanceof FireworkMeta fm) {
             fm.setPower(Math.max(1, Math.min(3, power)));
             it.setItemMeta(fm);
         }
         return it;
+    }
+
+    public Arena getActiveArena(UUID uuid) {
+        Session s = sessions.get(uuid);
+        return s != null ? s.arena : null;
     }
 }

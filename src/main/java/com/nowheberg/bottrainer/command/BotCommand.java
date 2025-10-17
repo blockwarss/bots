@@ -20,30 +20,30 @@ public class BotCommand implements CommandExecutor, TabCompleter {
 
     @Override public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
         if (args.length < 4) { sender.sendMessage("§cUsage: /"+label+" <joueur> <difficulte> <mode> <temps>"); return true; }
-        if (!sender.hasPermission("bottrainer.use")) { sender.sendMessage("§cPermission manquante."); return true; }
+        if (!sender.hasPermission("trainbot.use")) { sender.sendMessage("§cPermission manquante (trainbot.use)."); return true; }
 
         Player target = Bukkit.getPlayerExact(args[0]);
         if (target == null) { sender.sendMessage("§cJoueur introuvable."); return true; }
-        if (!sender.equals(target) && !sender.hasPermission("bottrainer.start.others")) {
-            sender.sendMessage("§cTu ne peux lancer que pour toi."); return true;
+
+        if (!sender.equals(target) && !sender.hasPermission("trainbot.admin")) {
+            sender.sendMessage("§cTu n'as pas la permission de démarrer pour un autre joueur (trainbot.admin).");
+            return true;
         }
 
         Difficulty diff;
         try { diff = Difficulty.valueOf(args[1].toUpperCase()); }
         catch (IllegalArgumentException ex) { sender.sendMessage("§cDifficulté invalide (EASY/NORMAL/HARD/INSANE)."); return true; }
-        if (!sender.hasPermission("bottrainer.diff."+diff.name().toLowerCase())) { sender.sendMessage("§cTu n'as pas la permission pour "+diff.name()); return true; }
 
         BotMode mode;
         try { mode = BotMode.valueOf(args[2].toUpperCase()); }
         catch (IllegalArgumentException ex) { sender.sendMessage("§cMode invalide (BASIC/MACE/CRYSTAL)."); return true; }
-        if (!sender.hasPermission("bottrainer.mode."+mode.name().toLowerCase())) { sender.sendMessage("§cTu n'as pas la permission pour le mode "+mode.name()); return true; }
 
         long durationTicks = TimeUtil.parseToTicks(args[3]);
         if (durationTicks <= 0) { sender.sendMessage("§cTemps invalide. Ex: 90s, 2m, 1m30s"); return true; }
 
         Arena arena = arenas.load();
         sessions.startFixedSession(target, arena, diff, mode, durationTicks);
-        sender.sendMessage("§aTéléportation dans l'arène et sélection de l'équipement...");
+        sender.sendMessage("§aTéléportation dans l'arène et démarrage de l'entraînement...");
         return true;
     }
 

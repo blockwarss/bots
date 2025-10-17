@@ -4,37 +4,24 @@ main: com.nowheberg.bottrainer.BotTrainerPlugin
 api-version: "1.21"
 author: Now-Heberg
 website: https://now-heberg.com
+softdepend: [StrikePractice]
 commands:
   bot:
     description: Lance un entraînement avec un bot.
     usage: /bot <joueur> <difficulte> <mode> <temps>
-    permission: bottrainer.use
+    permission: trainbot.use
   botarena:
     description: Configure l'arène.
     usage: /botarena <setspawn|setbounds|info>
-    permission: bottrainer.admin
+    permission: trainbot.admin
   botstop:
-    description: Stoppe ta session d'entraînement.
+    description: Stoppe ta session d'entraînement (ou celle d'un autre pour les admins).
     usage: /botstop [joueur]
-    permission: bottrainer.use
+    permission: trainbot.use
 permissions:
-  bottrainer.use:
-    default: true
-  bottrainer.admin:
-    default: op
-  bottrainer.start.others:
-    default: op
-  bottrainer.mode.basic:
-    default: true
-  bottrainer.mode.mace:
-    default: true
-  bottrainer.mode.crystal:
-    default: true
-  bottrainer.diff.easy:
-    default: true
-  bottrainer.diff.normal:
-    default: true
-  bottrainer.diff.hard:
-    default: op
-  bottrainer.diff.insane:
-    default: op
+  trainbot.use:
+    description: Lancer un entraînement et stopper sa propre session.
+    default: false
+  trainbot.admin:
+    description: Configurer l'arène et gérer toutes les sessions (dont celles des autres).
+    default: false

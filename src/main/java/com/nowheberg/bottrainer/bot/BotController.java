@@ -8,7 +8,6 @@ public interface BotController {
     LivingEntity entity();
     void start();
     void stop();
-
     void tick(Player target);
     void onArenaDamage(double finalDamage);
     BotMode mode();

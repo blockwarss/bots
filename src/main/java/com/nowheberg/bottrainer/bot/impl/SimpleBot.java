@@ -46,7 +46,6 @@ public class SimpleBot implements BotController {
                 loc.add(Math.cos(angle) * 2.0, 0, Math.sin(angle) * 2.0);
             }
         }
-
         Vindicator vind = (Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
         vind.setCustomNameVisible(true);
         vind.setCustomName("§6Training Bot §7[" + mode + "/" + difficulty + "]");
@@ -81,12 +80,10 @@ public class SimpleBot implements BotController {
 
         Vector toTarget = tl.toVector().subtract(el.toVector());
         double dist2 = toTarget.lengthSquared();
-        if (Double.isNaN(dist2) || dist2 < 1.0e-6) {
-            return;
-        }
+        if (Double.isNaN(dist2) || dist2 < 1.0e-6) { return; }
         Vector dir = toTarget.clone().normalize();
 
-        Vector move = new Vector();
+        Vector move;
         switch (mode) {
             case BASIC -> {
                 Vector v = dir.multiply(speed);
@@ -102,9 +99,9 @@ public class SimpleBot implements BotController {
                 Vector side = new Vector(-dir.getZ(), 0, dir.getX());
                 move = side.multiply((random.nextDouble()-0.5) * 0.8 * strafe).add(dir.multiply((random.nextDouble()-0.5) * 0.2));
             }
+            default -> move = new Vector();
         }
 
-        // Mouvement par téléportation douce (fiable, même avec NoAI et anti-cheats)
         if (Double.isFinite(move.getX()) && Double.isFinite(move.getY()) && Double.isFinite(move.getZ())) {
             Location next = el.clone().add(move.getX(), 0.0, move.getZ());
             next.setDirection(dir);
