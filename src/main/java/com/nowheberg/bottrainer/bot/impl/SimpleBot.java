@@ -39,7 +39,17 @@ public class SimpleBot implements BotController {
     @Override public Location spawnPoint() { return spawn; }
 
     @Override public void start() {
-        Vindicator vind = (Vindicator) spawn.getWorld().spawnEntity(spawn, EntityType.VINDICATOR);
+        Location loc = spawn.clone();
+        // Évite d'apparaître sur le joueur (vector nul -> NaN à la normalisation)
+        if (target.isOnline() && loc.getWorld() != null && target.getWorld() != null && loc.getWorld().equals(target.getWorld())) {
+            if (loc.distanceSquared(target.getLocation()) < 4.0) {
+                // Décale de 2 blocs dans une direction aléatoire sur XZ
+                double angle = random.nextDouble() * Math.PI * 2.0;
+                loc.add(Math.cos(angle) * 2.0, 0, Math.sin(angle) * 2.0);
+            }
+        }
+
+        Vindicator vind = (Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
         vind.setCustomNameVisible(true);
         vind.setCustomName("§6Training Bot §7[" + mode + "/" + difficulty + "]");
         vind.setAI(false);
@@ -72,32 +82,46 @@ public class SimpleBot implements BotController {
         Location tl = target.getLocation();
 
         Vector toTarget = tl.toVector().subtract(el.toVector());
+        double dist2 = toTarget.lengthSquared();
+        if (Double.isNaN(dist2) || dist2 < 1.0e-6) {
+            // Trop proche ou direction non définie : stabilise la physique et attends la prochaine tick
+            entity.setVelocity(new Vector(0, 0, 0));
+            return;
+        }
+
         Vector dir = toTarget.clone().normalize();
 
         switch (mode) {
             case BASIC -> {
                 Vector v = dir.multiply(speed);
                 Vector side = new Vector(-dir.getZ(), 0, dir.getX()).multiply(Math.sin(System.currentTimeMillis()*0.004) * 0.15 * strafe);
-                entity.setVelocity(v.add(side));
+                Vector vel = v.add(side);
+                if (isFinite(vel)) entity.setVelocity(vel);
                 tryAttack(target);
             }
             case MACE -> {
                 Vector jitter = new Vector((random.nextDouble()-0.5)*0.6*strafe, 0, (random.nextDouble()-0.5)*0.6*strafe);
-                Vector v = dir.multiply(speed*1.1).add(jitter);
-                if (random.nextDouble() < 0.03) v.setY(0.42);
-                entity.setVelocity(v);
+                Vector vel = dir.multiply(speed*1.1).add(jitter);
+                if (random.nextDouble() < 0.03) vel.setY(0.42);
+                if (isFinite(vel)) entity.setVelocity(vel);
             }
             case CRYSTAL -> {
                 Vector side = new Vector(-dir.getZ(), 0, dir.getX());
-                Vector v = side.multiply((random.nextDouble()-0.5) * 0.8 * strafe).add(dir.multiply((random.nextDouble()-0.5) * 0.2));
-                entity.setVelocity(v);
+                Vector vel = side.multiply((random.nextDouble()-0.5) * 0.8 * strafe).add(dir.multiply((random.nextDouble()-0.5) * 0.2));
+                if (isFinite(vel)) entity.setVelocity(vel);
             }
         }
 
-        el.setDirection(dir);
-        entity.teleport(el);
+        if (isFinite(dir)) {
+            el.setDirection(dir);
+            entity.teleport(el);
+        }
 
         if (el.distanceSquared(spawn) > 150*150) { entity.teleport(spawn); entity.setVelocity(new Vector()); }
+    }
+
+    private static boolean isFinite(Vector v) {
+        return Double.isFinite(v.getX()) && Double.isFinite(v.getY()) && Double.isFinite(v.getZ());
     }
 
     private void tryAttack(Player target) {
