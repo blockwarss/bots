@@ -18,10 +18,14 @@ commands:
     description: Stoppe ta session d'entraînement (ou celle d'un autre pour les admins).
     usage: /botstop [joueur]
     permission: trainbot.use
+  botdebug:
+    description: Affiche les infos de debug de ta session.
+    usage: /botdebug
+    permission: trainbot.admin
 permissions:
   trainbot.use:
     description: Lancer un entraînement et stopper sa propre session.
     default: false
   trainbot.admin:
-    description: Configurer l'arène et gérer toutes les sessions (dont celles des autres).
+    description: Configurer l'arène et gérer toutes les sessions (dont celles des autres), debug.
     default: false

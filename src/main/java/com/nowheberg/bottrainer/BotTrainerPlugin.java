@@ -4,6 +4,7 @@ import com.nowheberg.bottrainer.arena.ArenaManager;
 import com.nowheberg.bottrainer.command.ArenaCommand;
 import com.nowheberg.bottrainer.command.BotCommand;
 import com.nowheberg.bottrainer.command.StopCommand;
+import com.nowheberg.bottrainer.command.DebugCommand;
 import com.nowheberg.bottrainer.integration.StrikePracticeBypassListener;
 import com.nowheberg.bottrainer.integration.StrikePracticeHook;
 import com.nowheberg.bottrainer.session.SessionManager;
@@ -30,6 +31,7 @@ public class BotTrainerPlugin extends JavaPlugin {
         getCommand("bot").setTabCompleter(new BotCommand(sessionManager, arenaManager));
         getCommand("botarena").setExecutor(new ArenaCommand(arenaManager));
         getCommand("botstop").setExecutor(new StopCommand(sessionManager));
+        getCommand("botdebug").setExecutor(new DebugCommand(sessionManager));
 
         Bukkit.getPluginManager().registerEvents(sessionManager, this);
 

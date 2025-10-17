@@ -7,12 +7,11 @@ import org.bukkit.Material;
 import org.bukkit.entity.EnderCrystal;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Projectile;
+import org.bukkit.entity.WindCharge;
 import org.bukkit.event.*;
 import org.bukkit.event.block.BlockPlaceEvent;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityExplodeEvent;
-import org.bukkit.event.entity.EntitySpawnEvent;
-import org.bukkit.event.entity.ProjectileLaunchEvent;
+import org.bukkit.event.entity.*;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
 
@@ -43,20 +42,61 @@ public final class StrikePracticeBypassListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onInteract(PlayerInteractEvent e) {
+    // EARLY pass : autoriser l'interaction
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onInteractLowest(PlayerInteractEvent e) {
         Player p = e.getPlayer();
         if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
         ItemStack item = e.getItem(); if (item == null) return;
         Material m = item.getType();
-        // Autoriser Wind Charge, Firework, End Crystal
         if (m == Material.WIND_CHARGE || m == Material.FIREWORK_ROCKET || m == Material.END_CRYSTAL) {
+            e.setUseItemInHand(Event.Result.ALLOW);
+            e.setUseInteractedBlock(Event.Result.ALLOW);
             e.setCancelled(false);
-            dbg(p, "Uncancel PlayerInteract for " + m);
+            dbg(p, "ALLOW (LOWEST) " + m);
         }
     }
 
-    // Certaines versions d'End Crystal ne passent pas par BlockPlace : on garde ce handler si jamais
+    // NORMAL/HIGHEST pass : maintenir autorisé
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onInteractHighest(PlayerInteractEvent e) {
+        Player p = e.getPlayer();
+        if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
+        ItemStack item = e.getItem(); if (item == null) return;
+        Material m = item.getType();
+        if (m == Material.WIND_CHARGE || m == Material.FIREWORK_ROCKET || m == Material.END_CRYSTAL) {
+            e.setCancelled(false);
+            dbg(p, "Uncancel (HIGHEST) " + m);
+        }
+    }
+
+    // Projectile lancé (WindCharge inclus)
+    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
+    public void onLaunch(ProjectileLaunchEvent e) {
+        Projectile proj = e.getEntity();
+        if (!(proj.getShooter() instanceof Player p)) return;
+        if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
+        e.setCancelled(false);
+        dbg(p, "Uncancel ProjectileLaunch " + proj.getType());
+    }
+
+    // Forcer l'explosion de WindCharge à l'impact (si un autre plugin empêche son comportement)
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onProjectileHit(ProjectileHitEvent e) {
+        Projectile proj = e.getEntity();
+        if (!(proj instanceof WindCharge wc)) return;
+        if (!(proj.getShooter() instanceof Player p)) return;
+        if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
+        try {
+            // Si SP a absorbé l'effet, déclencher nous-même
+            wc.explode();
+            dbg(p, "Force explode WindCharge on hit");
+        } catch (Throwable t) {
+            // rien, juste éviter un crash si l'API diffère
+        }
+    }
+
+    // End Crystal : certains plugins annulent le place/spawn/explosion
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent e) {
         Player p = e.getPlayer();
@@ -67,33 +107,6 @@ public final class StrikePracticeBypassListener implements Listener {
         }
     }
 
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onLaunch(ProjectileLaunchEvent e) {
-        if (!(e.getEntity().getShooter() instanceof Player p)) return;
-        if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
-        e.setCancelled(false);
-        dbg(p, "Uncancel ProjectileLaunch " + e.getEntity().getType());
-    }
-
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onDamage(EntityDamageByEntityEvent e) {
-        Entity victim = e.getEntity();
-        Entity damager = e.getDamager();
-        Player pDamager = (damager instanceof Player) ? (Player) damager : null;
-        Player pVictim  = (victim  instanceof Player) ? (Player) victim  : null;
-
-        if (pDamager != null && isOurTrainee(pDamager) && !inRealSpFight(pDamager) && withinArena(pDamager)) {
-            e.setCancelled(false);
-            dbg(pDamager, "Uncancel Damage -> " + victim.getType());
-            return;
-        }
-        if (pVictim != null && isOurTrainee(pVictim) && !inRealSpFight(pVictim) && withinArena(pVictim)) {
-            e.setCancelled(false);
-            dbg(pVictim, "Uncancel Damage from " + (damager==null?"null":damager.getType().name()));
-        }
-    }
-
-    // Spawn d'EnderCrystal annulé par certains plugins
     @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
     public void onSpawn(EntitySpawnEvent e) {
         if (!(e.getEntity() instanceof EnderCrystal)) return;
@@ -113,5 +126,29 @@ public final class StrikePracticeBypassListener implements Listener {
         if (!isOurTrainee(nearest) || inRealSpFight(nearest) || !withinArena(nearest)) return;
         e.setCancelled(false);
         dbg(nearest, "Uncancel EntityExplode END_CRYSTAL");
+    }
+
+    // Double-pass sur les dégâts pour contrer un re-cancel agressif
+    @EventHandler(priority = EventPriority.LOWEST, ignoreCancelled = false)
+    public void onDamageLowest(EntityDamageByEntityEvent e) { uncancelDamage(e, "LOWEST"); }
+
+    @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = false)
+    public void onDamageMonitor(EntityDamageByEntityEvent e) { uncancelDamage(e, "MONITOR"); }
+
+    private void uncancelDamage(EntityDamageByEntityEvent e, String from) {
+        Entity victim = e.getEntity();
+        Entity damager = e.getDamager();
+        Player pDamager = (damager instanceof Player) ? (Player) damager : null;
+        Player pVictim  = (victim  instanceof Player) ? (Player) victim  : null;
+
+        if (pDamager != null && isOurTrainee(pDamager) && !inRealSpFight(pDamager) && withinArena(pDamager)) {
+            e.setCancelled(false);
+            dbg(pDamager, "Uncancel Damage (" + from + ") -> " + victim.getType());
+            return;
+        }
+        if (pVictim != null && isOurTrainee(pVictim) && !inRealSpFight(pVictim) && withinArena(pVictim)) {
+            e.setCancelled(false);
+            dbg(pVictim, "Uncancel Damage (" + from + ") from " + (damager==null ? "null" : damager.getType().name()));
+        }
     }
 }

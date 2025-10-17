@@ -17,7 +17,6 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
-import org.bukkit.util.Vector;
 
 import java.util.Random;
 
@@ -75,8 +74,8 @@ public class SimpleBot implements BotController {
 
     @Override public void tick(Player target) {
         if (entity == null || entity.isDead() || !target.isOnline()) { stop(); return; }
-        Location el = entity.getLocation();
-        Location tl = target.getLocation();
+        var el = entity.getLocation();
+        var tl = target.getLocation();
 
         var toTarget = tl.toVector().subtract(el.toVector());
         double dist2 = toTarget.lengthSquared();
@@ -103,7 +102,7 @@ public class SimpleBot implements BotController {
         }
 
         if (Double.isFinite(move.getX()) && Double.isFinite(move.getY()) && Double.isFinite(move.getZ())) {
-            Location next = el.clone().add(move.getX(), 0.0, move.getZ());
+            var next = el.clone().add(move.getX(), 0.0, move.getZ());
             next.setDirection(dir);
             entity.teleport(next);
         }
@@ -127,7 +126,7 @@ public class SimpleBot implements BotController {
         if (entity.getHealth() - finalDamage <= 0) {
             entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
             entity.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, entity.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
-            entity.setHealth(Math.min(entity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue(), entity.getHealth() + 14.0));
+            entity.setHealth(Math.min(entity.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue(), entity.getHealth() + 14.0));
         }
     }
 }

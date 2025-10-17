@@ -80,6 +80,8 @@ public class SessionManager implements Listener {
         }, 20L, 20L);
     }
 
+    public boolean hasSession(UUID id) { return sessions.containsKey(id); }
+
     public void stopSession(UUID playerId, boolean restore) {
         Session s = sessions.remove(playerId);
         if (s != null && s.bot != null) s.bot.stop();
@@ -129,7 +131,7 @@ public class SessionManager implements Listener {
             e.setCancelled(true);
             le.setNoDamageTicks(15);
             le.getWorld().playSound(le.getLocation(), org.bukkit.Sound.ITEM_TOTEM_USE, 1f, 1f);
-            le.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, le.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
+            le.getWorld().spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, le.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
             double newHp = Math.min(le.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue(), le.getHealth() + 14.0);
             le.setHealth(newHp);
             if (le.getEquipment()!=null) le.getEquipment().setItemInOffHand(new ItemStack(Material.TOTEM_OF_UNDYING));

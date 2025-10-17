@@ -9,6 +9,9 @@ settings:
   keepInventoryInArena: true
   fallDamageInArena: false
   crystalDamageMultiplier: 0.8
+  simulate:
+    windcharge_when_blocked: true
+    windburst_when_blocked: true
   bot:
     baseHealth: 40.0
     infiniteTotems: true
