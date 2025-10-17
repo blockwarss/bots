@@ -28,7 +28,6 @@ public final class StrikePracticeHook {
                 Object result = isInFight.invoke(api, player);
                 return result instanceof Boolean b && b;
             } catch (NoSuchMethodException ex) {
-                // fallback: getPlayerManager().isInFight(player)
                 Method getPM = api.getClass().getMethod("getPlayerManager");
                 Object pm = getPM.invoke(api);
                 Method isInFight2 = pm.getClass().getMethod("isInFight", Player.class);

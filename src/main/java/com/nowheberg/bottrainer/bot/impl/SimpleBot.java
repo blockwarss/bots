@@ -46,7 +46,7 @@ public class SimpleBot implements BotController {
                 loc.add(Math.cos(angle) * 2.0, 0, Math.sin(angle) * 2.0);
             }
         }
-        var vind = (org.bukkit.entity.Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
+        Vindicator vind = (Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
         vind.setCustomNameVisible(true);
         vind.setCustomName("§6Training Bot §7[" + mode + "/" + difficulty + "]");
         vind.setAI(false);
@@ -78,28 +78,28 @@ public class SimpleBot implements BotController {
         Location el = entity.getLocation();
         Location tl = target.getLocation();
 
-        Vector toTarget = tl.toVector().subtract(el.toVector());
+        var toTarget = tl.toVector().subtract(el.toVector());
         double dist2 = toTarget.lengthSquared();
         if (Double.isNaN(dist2) || dist2 < 1.0e-6) { return; }
-        Vector dir = toTarget.clone().normalize();
+        var dir = toTarget.clone().normalize();
 
-        Vector move;
+        org.bukkit.util.Vector move;
         switch (mode) {
             case BASIC -> {
-                Vector v = dir.multiply(speed);
-                Vector side = new Vector(-dir.getZ(), 0, dir.getX()).multiply(Math.sin(System.currentTimeMillis()*0.004) * 0.15 * strafe);
+                var v = dir.multiply(speed);
+                var side = new org.bukkit.util.Vector(-dir.getZ(), 0, dir.getX()).multiply(Math.sin(System.currentTimeMillis()*0.004) * 0.15 * strafe);
                 move = v.add(side);
                 tryAttack(target);
             }
             case MACE -> {
-                Vector jitter = new Vector((random.nextDouble()-0.5)*0.6*strafe, 0, (random.nextDouble()-0.5)*0.6*strafe);
+                var jitter = new org.bukkit.util.Vector((random.nextDouble()-0.5)*0.6*strafe, 0, (random.nextDouble()-0.5)*0.6*strafe);
                 move = dir.multiply(speed*1.1).add(jitter);
             }
             case CRYSTAL -> {
-                Vector side = new Vector(-dir.getZ(), 0, dir.getX());
+                var side = new org.bukkit.util.Vector(-dir.getZ(), 0, dir.getX());
                 move = side.multiply((random.nextDouble()-0.5) * 0.8 * strafe).add(dir.multiply((random.nextDouble()-0.5) * 0.2));
             }
-            default -> move = new Vector();
+            default -> move = new org.bukkit.util.Vector();
         }
 
         if (Double.isFinite(move.getX()) && Double.isFinite(move.getY()) && Double.isFinite(move.getZ())) {

@@ -14,7 +14,6 @@ import org.bukkit.event.entity.EntityExplodeEvent;
 import org.bukkit.event.entity.EntitySpawnEvent;
 import org.bukkit.event.entity.ProjectileLaunchEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerToggleGlideEvent;
 import org.bukkit.inventory.ItemStack;
 
 public final class StrikePracticeBypassListener implements Listener {
@@ -92,15 +91,6 @@ public final class StrikePracticeBypassListener implements Listener {
             e.setCancelled(false);
             dbg(pVictim, "Uncancel Damage from " + (damager==null?"null":damager.getType().name()));
         }
-    }
-
-    // Elytra glide parfois bloqué par SP
-    @EventHandler(priority = EventPriority.HIGHEST, ignoreCancelled = true)
-    public void onToggleGlide(PlayerToggleGlideEvent e) {
-        Player p = e.getPlayer();
-        if (!isOurTrainee(p) || inRealSpFight(p) || !withinArena(p)) return;
-        e.setCancelled(false);
-        dbg(p, "Uncancel ToggleGlide -> " + e.isGliding());
     }
 
     // Spawn d'EnderCrystal annulé par certains plugins

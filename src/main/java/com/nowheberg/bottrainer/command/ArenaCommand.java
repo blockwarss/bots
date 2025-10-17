@@ -11,7 +11,7 @@ public class ArenaCommand implements CommandExecutor {
     public ArenaCommand(ArenaManager a) { this.arenas = a; }
 
     @Override public boolean onCommand(@NotNull CommandSender sender, @NotNull Command cmd, @NotNull String label, @NotNull String[] args) {
-        if (!sender.hasPermission("trainbot.admin")) { sender.sendMessage("§cPermission manquante (trainbot.admin)."); return true; }
+        if (!sender.hasPermission("trainbot.admin")) { sender.sendMessage("§cPermission manquante (trainbot.admin))."); return true; }
         if (!(sender instanceof Player p)) { sender.sendMessage("§cCommande joueur uniquement."); return true; }
         if (args.length == 0) { sender.sendMessage("§e/"+label+" setspawn | setbounds <1|2> | info"); return true; }
         switch (args[0].toLowerCase()){
