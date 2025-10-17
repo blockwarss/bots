@@ -31,9 +31,7 @@ public class LoadoutGui implements Listener {
 
     private void redraw() {
         inv.clear();
-        // Slots preview
         for (int i=0;i<9;i++) inv.setItem(i, new ItemStack(Material.GRAY_STAINED_GLASS_PANE));
-        // boutons
         inv.setItem(13, ItemUtil.named(Material.NETHERITE_SWORD, "§bÉpée Netherite"));
         inv.setItem(14, ItemUtil.named(Material.MACE, "§dMasse"));
         inv.setItem(15, ItemUtil.named(Material.BOW, "§aArc"));

@@ -25,7 +25,7 @@ public class Arena {
     public void setPos2(Location l) { this.pos2 = l; }
 
     public boolean isInside(Location loc) {
-        if (pos1 == null || pos2 == null || loc == null || !loc.getWorld().getName().equals(worldName)) return true; // sans bounds = pas de restriction
+        if (pos1 == null || pos2 == null || loc == null || !loc.getWorld().getName().equals(worldName)) return true;
         double minX = Math.min(pos1.getX(), pos2.getX());
         double minY = Math.min(pos1.getY(), pos2.getY());
         double minZ = Math.min(pos1.getZ(), pos2.getZ());

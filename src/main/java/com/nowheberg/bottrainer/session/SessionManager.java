@@ -9,17 +9,16 @@ import com.nowheberg.bottrainer.gui.LoadoutGui;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.PlayerDeathEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Consumer;
 
 public class SessionManager implements Listener {
     public static class Session {
@@ -39,7 +38,6 @@ public class SessionManager implements Listener {
 
     public void prepareAndOpenLoadout(Player p, Arena arena, Difficulty diff, BotMode mode, long durationTicks) {
         if (sessions.containsKey(p.getUniqueId())) { p.sendMessage("§cTu as déjà une session en cours."); return; }
-        // TP vers l'arène
         Location spawn = arena.spawn();
         if (spawn.getWorld()==null) { p.sendMessage("§cArène non configurée (monde invalide)."); return; }
         var snap = PlayerSnapshot.of(p);
@@ -47,12 +45,9 @@ public class SessionManager implements Listener {
         p.setHealth(p.getMaxHealth()); p.setFoodLevel(20);
         p.teleport(spawn);
 
-        // Ouvrir la GUI de choix
         java.util.function.Consumer<Loadout> onConfirm = (load) -> {
-            // donner l'équipement choisi
             p.getInventory().setContents(load.contents);
             p.getInventory().setArmorContents(load.armor);
-            // créer le bot
             double baseRange = plugin.getConfig().getDouble("settings.bot.hitRange", 2.8);
             int baseCd = plugin.getConfig().getInt("settings.bot.attackCooldownTicks", 12);
             var diffSec = plugin.getConfig().getConfigurationSection("settings.difficulty."+diff.name());
@@ -65,7 +60,6 @@ public class SessionManager implements Listener {
             var session = new Session(p.getUniqueId(), snap, endTick, mode, diff, load, bot);
             sessions.put(p.getUniqueId(), session);
             p.sendMessage("§aEntraînement démarré: §e"+mode+" §7| §b"+diff+" §7| §f"+(durationTicks/20)+"s");
-            // tâche de fin
             Bukkit.getScheduler().runTaskTimer(plugin, () -> {
                 Session s = sessions.get(p.getUniqueId());
                 if (s == null) return;
@@ -104,39 +98,37 @@ public class SessionManager implements Listener {
         }, 1L);
     }
 
-    @EventHandler public void onDamage(org.bukkit.event.entity.EntityDamageEvent e) {
-        // Réduction dégâts chute et cristal dans l'arène
-        if (!(e.getEntity() instanceof org.bukkit.entity.Player p)) return;
-        java.util.UUID id = p.getUniqueId();
-        Session s = sessions.get(id); if (s == null) return;
-        switch (e.getCause()) {
-            case FALL -> { if (!plugin.getConfig().getBoolean("settings.fallDamageInArena", false)) e.setCancelled(true); }
-            case ENTITY_EXPLOSION, BLOCK_EXPLOSION -> {
-                double mult = plugin.getConfig().getDouble("settings.crystalDamageMultiplier", 1.0);
-                e.setDamage(e.getDamage()*mult);
-            }
-        }
-    }
-
     // Dégâts sur le bot -> totem infini simulé
-    @EventHandler public void onBotDamage(org.bukkit.event.entity.EntityDamageEvent e) {
+    @org.bukkit.event.EventHandler public void onBotDamage(org.bukkit.event.entity.EntityDamageEvent e) {
         if (!(e.getEntity() instanceof org.bukkit.entity.LivingEntity le)) return;
-        // heuristique: nos bots sont des Vindicators nommés Training Bot
         if (le.getCustomName()==null || !le.getCustomName().contains("Training Bot")) return;
         double finalDamage = e.getFinalDamage();
-        // notify bot controller? Ici simple: simuler totem
         if (le.getHealth() - finalDamage <= 0) {
             e.setCancelled(true);
             le.setNoDamageTicks(15);
             le.getWorld().playSound(le.getLocation(), org.bukkit.Sound.ITEM_TOTEM_USE, 1f, 1f);
-            le.getWorld().spawnParticle(org.bukkit.Particle.TOTEM, le.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
+            le.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, le.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
             double newHp = Math.min(le.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue(), le.getHealth() + 14.0);
             le.setHealth(newHp);
             if (le.getEquipment()!=null) le.getEquipment().setItemInOffHand(new ItemStack(Material.TOTEM_OF_UNDYING));
         }
     }
 
-    // Utilitaire pour la GUI
+    // Réduction dégâts chute/explosions dans l'arène (si activé)
+    @org.bukkit.event.EventHandler public void onPlayerDamage(org.bukkit.event.entity.EntityDamageEvent e) {
+        if (!(e.getEntity() instanceof Player p)) return;
+        java.util.UUID id = p.getUniqueId();
+        Session s = sessions.get(id); if (s == null) return;
+        switch (e.getCause()) {
+            case FALL -> e.setCancelled(true);
+            case ENTITY_EXPLOSION, BLOCK_EXPLOSION -> {
+                double mult = plugin.getConfig().getDouble("settings.crystalDamageMultiplier", 1.0);
+                e.setDamage(e.getDamage()*mult);
+            }
+            default -> {}
+        }
+    }
+
     public Loadout createDefaultLoadout() {
         Loadout l = new Loadout();
         l.contents = new ItemStack[36];

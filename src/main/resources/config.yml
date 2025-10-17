@@ -5,7 +5,6 @@ arena:
     pos1: { x: 0.0, y: 0.0, z: 0.0 }
     pos2: { x: 0.0, y: 0.0, z: 0.0 }
 settings:
-  useCitizensIfPresent: false
   keepInventoryInArena: true
   fallDamageInArena: false
   crystalDamageMultiplier: 0.8

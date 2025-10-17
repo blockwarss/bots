@@ -39,7 +39,6 @@ public class SimpleBot implements BotController {
     @Override public Location spawnPoint() { return spawn; }
 
     @Override public void start() {
-        // Vindicator = hitbox humanoïde + anim d'attaque
         Vindicator vind = (Vindicator) spawn.getWorld().spawnEntity(spawn, EntityType.VINDICATOR);
         vind.setCustomNameVisible(true);
         vind.setCustomName("§6Training Bot §7[" + mode + "/" + difficulty + "]");
@@ -56,7 +55,7 @@ public class SimpleBot implements BotController {
         AttributeInstance maxHealth = vind.getAttribute(Attribute.GENERIC_MAX_HEALTH);
         if (maxHealth != null) maxHealth.setBaseValue(BotTrainerPlugin.get().getConfig().getDouble("settings.bot.baseHealth", 40.0));
         vind.setHealth(vind.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
-        vind.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, Integer.MAX_VALUE, 0, false, false, false));
+        vind.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 0, false, false, false));
         this.entity = vind;
 
         this.task = BotTrainerPlugin.get().getServer().getScheduler().runTaskTimer(BotTrainerPlugin.get(), () -> tick(target), 1L, 1L);
@@ -78,31 +77,26 @@ public class SimpleBot implements BotController {
         switch (mode) {
             case BASIC -> {
                 Vector v = dir.multiply(speed);
-                // léger strafe
                 Vector side = new Vector(-dir.getZ(), 0, dir.getX()).multiply(Math.sin(System.currentTimeMillis()*0.004) * 0.15 * strafe);
                 entity.setVelocity(v.add(side));
                 tryAttack(target);
             }
             case MACE -> {
-                // déplacements erratiques rapides + sauts
                 Vector jitter = new Vector((random.nextDouble()-0.5)*0.6*strafe, 0, (random.nextDouble()-0.5)*0.6*strafe);
                 Vector v = dir.multiply(speed*1.1).add(jitter);
-                if (random.nextDouble() < 0.03) v.setY(0.42); // petit saut
+                if (random.nextDouble() < 0.03) v.setY(0.42);
                 entity.setVelocity(v);
             }
             case CRYSTAL -> {
-                // kiting aléatoire pour viser au crystal
                 Vector side = new Vector(-dir.getZ(), 0, dir.getX());
                 Vector v = side.multiply((random.nextDouble()-0.5) * 0.8 * strafe).add(dir.multiply((random.nextDouble()-0.5) * 0.2));
                 entity.setVelocity(v);
             }
         }
 
-        // tourner vers la cible
         el.setDirection(dir);
         entity.teleport(el);
 
-        // sécurité: ramener dans l'arène si trop loin
         if (el.distanceSquared(spawn) > 150*150) { entity.teleport(spawn); entity.setVelocity(new Vector()); }
     }
 
@@ -112,8 +106,7 @@ public class SimpleBot implements BotController {
         if (difficulty == Difficulty.HARD) range += 0.2; else if (difficulty == Difficulty.INSANE) range += 0.35;
         if (entity.getLocation().distanceSquared(target.getLocation()) <= range*range) {
             attackTick = attackCd;
-            target.damage(3.0, entity); // ~1.5 coeurs
-            // petite anim
+            target.damage(3.0, entity);
             entity.swingMainHand();
             target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.7f, 1.0f);
         }
@@ -121,9 +114,8 @@ public class SimpleBot implements BotController {
 
     @Override public void onArenaDamage(double finalDamage) {
         if (entity.getHealth() - finalDamage <= 0) {
-            // totem infini simulé
             entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
-            entity.getWorld().spawnParticle(Particle.TOTEM, entity.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
+            entity.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, entity.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
             entity.setHealth(Math.min(entity.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue(), entity.getHealth() + 14.0));
         }
     }

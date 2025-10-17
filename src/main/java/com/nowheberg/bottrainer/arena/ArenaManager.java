@@ -12,9 +12,9 @@ public class ArenaManager {
     private final Plugin plugin;
     private final FileConfiguration cfg;
 
-    public ArenaManager(Plugin plugin) { 
-        this.plugin = plugin; 
-        this.cfg = plugin.getConfig(); 
+    public ArenaManager(Plugin plugin) {
+        this.plugin = plugin;
+        this.cfg = plugin.getConfig();
     }
 
     public Arena load() {

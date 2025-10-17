@@ -4,8 +4,6 @@ main: com.nowheberg.bottrainer.BotTrainerPlugin
 api-version: "1.21"
 author: Now-Heberg
 website: https://now-heberg.com
-softdepend:
-  - Citizens
 commands:
   bot:
     description: Lance un entraînement avec un bot.
