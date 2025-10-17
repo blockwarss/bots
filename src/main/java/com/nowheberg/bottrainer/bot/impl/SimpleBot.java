@@ -58,9 +58,9 @@ public class SimpleBot implements BotController {
         vind.getEquipment().setChestplate(new ItemStack(org.bukkit.Material.NETHERITE_CHESTPLATE));
         vind.getEquipment().setLeggings(new ItemStack(org.bukkit.Material.NETHERITE_LEGGINGS));
         vind.getEquipment().setBoots(new ItemStack(org.bukkit.Material.NETHERITE_BOOTS));
-        AttributeInstance maxHealth = vind.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        AttributeInstance maxHealth = vind.getAttribute(Attribute.MAX_HEALTH);
         if (maxHealth != null) maxHealth.setBaseValue(BotTrainerPlugin.get().getConfig().getDouble("settings.bot.baseHealth", 40.0));
-        vind.setHealth(vind.getAttribute(Attribute.GENERIC_MAX_HEALTH).getValue());
+        vind.setHealth(vind.getAttribute(Attribute.MAX_HEALTH).getValue());
         vind.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, Integer.MAX_VALUE, 0, false, false, false));
         this.entity = vind;
 
@@ -126,7 +126,7 @@ public class SimpleBot implements BotController {
         if (entity.getHealth() - finalDamage <= 0) {
             entity.getWorld().playSound(entity.getLocation(), Sound.ITEM_TOTEM_USE, 1f, 1f);
             entity.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, entity.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
-            entity.setHealth(Math.min(entity.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue(), entity.getHealth() + 14.0));
+            entity.setHealth(Math.min(entity.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue(), entity.getHealth() + 14.0));
         }
     }
 }

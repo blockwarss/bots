@@ -132,7 +132,7 @@ public class SessionManager implements Listener {
             le.setNoDamageTicks(15);
             le.getWorld().playSound(le.getLocation(), org.bukkit.Sound.ITEM_TOTEM_USE, 1f, 1f);
             le.getWorld().spawnParticle(org.bukkit.Particle.TOTEM_OF_UNDYING, le.getLocation().add(0,1,0), 40, 0.4, 0.6, 0.4, 0.1);
-            double newHp = Math.min(le.getAttribute(org.bukkit.attribute.Attribute.GENERIC_MAX_HEALTH).getValue(), le.getHealth() + 14.0);
+            double newHp = Math.min(le.getAttribute(org.bukkit.attribute.Attribute.MAX_HEALTH).getValue(), le.getHealth() + 14.0);
             le.setHealth(newHp);
             if (le.getEquipment()!=null) le.getEquipment().setItemInOffHand(new ItemStack(Material.TOTEM_OF_UNDYING));
         }
