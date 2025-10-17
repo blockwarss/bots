@@ -22,17 +22,19 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: gradle
 
-      # Utilise Gradle 9.1.0 sans wrapper local
-      - name: Set up Gradle
+      - name: Set up Gradle (CLI 9.1.0)
         uses: gradle/actions/setup-gradle@v3
         with:
           gradle-version: 9.1.0
 
-      - name: Build
-        run: gradle build --stacktrace
+      - name: Generate Gradle Wrapper (9.1.0)
+        run: gradle wrapper --gradle-version 9.1.0
+
+      - name: Build with Wrapper
+        run: ./gradlew build --stacktrace
 
       - name: Upload JAR
         uses: actions/upload-artifact@v4
