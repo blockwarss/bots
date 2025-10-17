@@ -42,7 +42,7 @@ public class BotCommand implements CommandExecutor, TabCompleter {
         if (durationTicks <= 0) { sender.sendMessage("§cTemps invalide. Ex: 90s, 2m, 1m30s"); return true; }
 
         Arena arena = arenas.load();
-        sessions.prepareAndOpenLoadout(target, arena, diff, mode, durationTicks);
+        sessions.startFixedSession(target, arena, diff, mode, durationTicks);
         sender.sendMessage("§aTéléportation dans l'arène et sélection de l'équipement...");
         return true;
     }
