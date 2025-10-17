@@ -23,9 +23,18 @@ public final class StrikePracticeHook {
             Method getAPI = spMain.getMethod("getAPI");
             Object api = getAPI.invoke(null);
             if (api == null) return false;
-            Method isInFight = api.getClass().getMethod("isInFight", Player.class);
-            Object result = isInFight.invoke(api, player);
-            return result instanceof Boolean b && b;
+            try {
+                Method isInFight = api.getClass().getMethod("isInFight", Player.class);
+                Object result = isInFight.invoke(api, player);
+                return result instanceof Boolean b && b;
+            } catch (NoSuchMethodException ex) {
+                // fallback: getPlayerManager().isInFight(player)
+                Method getPM = api.getClass().getMethod("getPlayerManager");
+                Object pm = getPM.invoke(api);
+                Method isInFight2 = pm.getClass().getMethod("isInFight", Player.class);
+                Object result2 = isInFight2.invoke(pm, player);
+                return result2 instanceof Boolean b && b;
+            }
         } catch (Throwable t) {
             return false;
         }

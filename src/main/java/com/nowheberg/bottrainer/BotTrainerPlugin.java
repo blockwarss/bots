@@ -17,6 +17,8 @@ public class BotTrainerPlugin extends JavaPlugin {
     private final StrikePracticeHook spHook = new StrikePracticeHook();
 
     public static BotTrainerPlugin get() { return instance; }
+    public ArenaManager arenas() { return arenaManager; }
+    public SessionManager sessions() { return sessionManager; }
 
     @Override public void onEnable() {
         instance = this;

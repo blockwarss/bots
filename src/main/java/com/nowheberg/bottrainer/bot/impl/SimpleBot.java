@@ -46,7 +46,7 @@ public class SimpleBot implements BotController {
                 loc.add(Math.cos(angle) * 2.0, 0, Math.sin(angle) * 2.0);
             }
         }
-        Vindicator vind = (Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
+        var vind = (org.bukkit.entity.Vindicator) loc.getWorld().spawnEntity(loc, EntityType.VINDICATOR);
         vind.setCustomNameVisible(true);
         vind.setCustomName("§6Training Bot §7[" + mode + "/" + difficulty + "]");
         vind.setAI(false);
@@ -119,7 +119,7 @@ public class SimpleBot implements BotController {
             attackTick = attackCd;
             target.damage(3.0, entity);
             entity.swingMainHand();
-            target.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.7f, 1.0f);
+            entity.getWorld().playSound(target.getLocation(), Sound.ENTITY_PLAYER_ATTACK_STRONG, 0.7f, 1.0f);
         }
     }
 
