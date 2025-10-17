@@ -175,7 +175,7 @@ public class SessionManager implements Listener {
 
         // Sword netherite Unbreaking 5
         ItemStack sword = new ItemStack(Material.NETHERITE_SWORD);
-        sword.addUnsafeEnchantment(Enchantment.DURABILITY, 5);
+        sword.addUnsafeEnchantment(Enchantment.UNBREAKING, 5);
 
         // Mace 1: Wind Burst 2 + Density 5
         ItemStack maceWB = new ItemStack(Material.MACE);
@@ -188,7 +188,7 @@ public class SessionManager implements Listener {
 
         // Elytra Unbreaking 10 (dans l'inventaire, pas équipée)
         ItemStack elytra = new ItemStack(Material.ELYTRA);
-        elytra.addUnsafeEnchantment(Enchantment.DURABILITY, 10);
+        elytra.addUnsafeEnchantment(Enchantment.UNBREAKING, 10);
 
         // Steaks x64
         ItemStack steaks = new ItemStack(Material.COOKED_BEEF, 64);
