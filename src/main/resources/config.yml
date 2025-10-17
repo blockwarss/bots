@@ -1,0 +1,22 @@
+arena:
+  world: ""
+  spawn: { x: 0.5, y: 64.0, z: 0.5, yaw: 0.0, pitch: 0.0 }
+  bounds:
+    pos1: { x: 0.0, y: 0.0, z: 0.0 }
+    pos2: { x: 0.0, y: 0.0, z: 0.0 }
+settings:
+  useCitizensIfPresent: false
+  keepInventoryInArena: true
+  fallDamageInArena: false
+  crystalDamageMultiplier: 0.8
+  bot:
+    baseHealth: 40.0
+    infiniteTotems: true
+    knockbackResistance: 0.3
+    hitRange: 2.8
+    attackCooldownTicks: 12
+  difficulty:
+    EASY:   { speed: 0.20, strafe: 0.8, reachBonus: 0.0 }
+    NORMAL: { speed: 0.26, strafe: 1.0, reachBonus: 0.1 }
+    HARD:   { speed: 0.32, strafe: 1.2, reachBonus: 0.2 }
+    INSANE: { speed: 0.38, strafe: 1.5, reachBonus: 0.3 }

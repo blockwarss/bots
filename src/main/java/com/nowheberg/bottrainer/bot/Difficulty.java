@@ -1,0 +1,3 @@
+package com.nowheberg.bottrainer.bot;
+
+public enum Difficulty { EASY, NORMAL, HARD, INSANE }

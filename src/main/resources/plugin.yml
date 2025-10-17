@@ -1,0 +1,42 @@
+name: BotTrainer
+version: "${version}"
+main: com.nowheberg.bottrainer.BotTrainerPlugin
+api-version: "1.21"
+author: Now-Heberg
+website: https://now-heberg.com
+softdepend:
+  - Citizens
+commands:
+  bot:
+    description: Lance un entraînement avec un bot.
+    usage: /bot <joueur> <difficulte> <mode> <temps>
+    permission: bottrainer.use
+  botarena:
+    description: Configure l'arène.
+    usage: /botarena <setspawn|setbounds|info>
+    permission: bottrainer.admin
+  botstop:
+    description: Stoppe ta session d'entraînement.
+    usage: /botstop [joueur]
+    permission: bottrainer.use
+permissions:
+  bottrainer.use:
+    default: true
+  bottrainer.admin:
+    default: op
+  bottrainer.start.others:
+    default: op
+  bottrainer.mode.basic:
+    default: true
+  bottrainer.mode.mace:
+    default: true
+  bottrainer.mode.crystal:
+    default: true
+  bottrainer.diff.easy:
+    default: true
+  bottrainer.diff.normal:
+    default: true
+  bottrainer.diff.hard:
+    default: op
+  bottrainer.diff.insane:
+    default: op
