@@ -12,12 +12,11 @@ version = "1.0.0"
 repositories {
     mavenLocal()
     maven("https://repo.papermc.io/repository/maven-public/")
-    maven("https://repo.codemc.org/repository/maven-public/") // Citizens
 }
 
 dependencies {
     compileOnly("io.papermc.paper:paper-api:1.21-R0.1-SNAPSHOT")
-    compileOnly("net.citizensnpcs:citizens-main:2.0.33-SNAPSHOT") // optionnel
+    // Citizens optionnel : retiré par défaut pour éviter les erreurs de résolution
 }
 
 tasks.processResources {
